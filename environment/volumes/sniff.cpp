@@ -18,17 +18,36 @@ int main()
 	bpf_u_int32 net;
 
 	// Step 1: Open live PCAP session handle on NIC using your interface name
-	// TODO
+	char *dev = pcap_lookupdev(errbuf);	// find default device
+	if (dev == NULL) {
+		fprintf(stderr, "Error finding device: %s\n", errbuf);
+		return 1;
+	}
+	printf("Using device: %s\n", dev);
+
+	handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);	// open device for sniffing
+	if (handle == NULL) {
+		fprintf(stderr, "Error opening device %s: %s\n", errbuf);
+		return 1;
+	}
 
 	// Step 2: Compile filter_exp into BPF pseudo-code
-	// TODO
+	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
+		fprintf(stderr, "Error compiling filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return 1;
+	}
+
+	if (pcap_setfilter(handle, &fp) == -1) {
+		fprintf(stderr, "Error setting filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return 1;
+	}
 
 	// Step 3: Capture packets
 	printf("Sniffing...\n");
-	// TODO
+	pcap_loop(handle, -1, got_packet, NULL);	// continuously captures packets and passes them to got_packet for processing
 
-	// Close the PCAP session handle
-	// TODO
+	// Close the PCAP session handle once sniffing is complete
+	pcap_close(handle);
 
 	return 0;
 }

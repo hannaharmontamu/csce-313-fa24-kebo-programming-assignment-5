@@ -123,23 +123,41 @@ void send_raw_ip_packet(ipheader *ip)
 {
     udpheader *udp = (udpheader *)(ip + 1);
     sockaddr_in dest_info;
+    int sock_fd;
     int enable = 1;
 
     // Create a raw socket and sets options associated with a socket
-    // TODO
     // create a socket
+    sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (sock_fd < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
     // set socket options using sockopt
+    if (setsockopt(sock_fd, IPPROTO_IP, IP_HDRINCL, &enable, sizeof(enable)) < 0) {
+        perror("setsockopt failed");
+        close(sock_fd);
+        exit(EXIT_FAILURE);
+    }
 
     // Set packet destination info
-    // TODO
     // set destination info -> family and sin_addr provided by the ip header
+    dest_info.sin_family = AF_INET;
+    dest_info.sin_addr = ip->iph_destip;
 
     // Send the packet
     printf("Sending packet...\n");
     // This will be used by both the server and spoofer
     // error checking for sendto
     // if good, send the packet to the socket
+
+    if (sendto(sock_fd, ip, ntohs(ip->iph_len), 0, (struct sockaddr *)&dest_info, sizeof(dest_info)) < 0) {
+        perror("sendto failed");
+    }
+    else {
+        printf("Packet sent successfully to %s\n", inet_ntoa(ip->iph_destip));
+    }
     
     // Closet socket
-    // TODO
+    close(sock_fd);
 }
